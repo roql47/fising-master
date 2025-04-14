@@ -322,7 +322,7 @@
     }
 
     // 연결 함수
-    function connect() {
+    function connect(nickname, room) {
       // 현재 호스트 기반으로 WebSocket URL 생성
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
@@ -382,7 +382,7 @@
         socket.close();
       }
 
-      connect();
+      connect(nickname, room);
     };
   </script>
 </body>
