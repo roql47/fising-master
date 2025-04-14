@@ -303,19 +303,11 @@
           socket.send(JSON.stringify({ type: 'requestUserInfo', targetUserId }));
         };
         messages.appendChild(div);
-        
-        // 사용자 목록에 추가
-        currentUsers.add(msg.nickname);
-        updateUserList();
       } else if (type === 'leave' && msg.nickname) {
         // 퇴장 메시지 표시
         const div = document.createElement('div');
         div.textContent = msg.text;
         messages.appendChild(div);
-        
-        // 사용자 목록에서 제거
-        currentUsers.delete(msg.nickname);
-        updateUserList();
       } else {
         const div = document.createElement('div');
         div.textContent = typeof msg === 'string' ? msg : msg.text;
@@ -338,9 +330,7 @@
         input.focus();
         isConnected = true;
         
-        // 자신의 닉네임을 참여자 목록에 추가
-        currentUsers.add(nickname);
-        updateUserList();
+        // 서버에서 full_user_list를 받아서 처리하므로, 여기서는 추가하지 않음
       });
 
       socket.onmessage = (event) => {
@@ -352,8 +342,10 @@
         }
         if (data.type === 'join') {
           addMessage(data, 'join');
+          // 서버에서 full_user_list를 별도로 보내주므로, 여기서는 추가하지 않음
         } else if (data.type === 'leave') {
           addMessage(data, 'leave');
+          // 서버에서 full_user_list를 별도로 보내주므로, 여기서는 제거하지 않음
         } else if (data.type === 'userInfo') {
           // 사용자 정보를 alert로 표시 (IP, 인벤토리, 골드)
           alert(`IP 주소: ${data.userId}\n인벤토리: ${JSON.stringify(data.inventory)}\n골드: ${data.gold}`);
