@@ -169,56 +169,190 @@
     .tab-content.active {
       display: block;
     }
+    /* 로그인 및 회원가입 폼 스타일 */
+    .auth-container {
+      max-width: 400px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .auth-form input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .auth-form button {
+      margin-top: 10px;
+    }
+    .auth-toggle {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .auth-toggle a {
+      color: #4a90e2;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .auth-toggle a:hover {
+      text-decoration: underline;
+    }
+    .auth-message {
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    .auth-message.error {
+      background: #ffebee;
+      color: #d32f2f;
+      display: block;
+    }
+    .auth-message.success {
+      background: #e8f5e9;
+      color: #388e3c;
+      display: block;
+    }
+    .user-info {
+      background: #f1f8e9;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .user-info-text {
+      font-weight: bold;
+    }
+    #logoutBtn {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    #authContainer {
+      display: block;
+    }
+    #chatContainer {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <div class="chat-container">
+  <!-- 인증 컨테이너 -->
+  <div id="authContainer" class="auth-container">
     <h1>🎣 낚시 채팅방</h1>
-    <div id="status">서버 연결 상태: <span style="color:red;">연결 중...</span></div>
     
-    <div id="controls">
-      <label>닉네임: <input id="nicknameInput" placeholder="닉네임" /></label>
-      <label>방 이름: <input id="roomInput" value="기본방" /></label>
-      <button id="joinButton">입장</button>
+    <!-- 로그인 폼 -->
+    <div id="loginForm" class="auth-form">
+      <h2>로그인</h2>
+      <input type="text" id="loginUsername" placeholder="사용자 이름" required>
+      <input type="password" id="loginPassword" placeholder="비밀번호" required>
+      <button id="loginBtn">로그인</button>
+      <div id="loginMessage" class="auth-message"></div>
+      <div class="auth-toggle">
+        계정이 없으신가요? <a id="showRegisterBtn">회원가입</a>
+      </div>
+      <div class="auth-toggle">
+        <a id="guestLoginBtn">게스트로 입장하기</a>
+      </div>
     </div>
-
-    <div class="tabs">
-      <div class="tab active" data-tab="chat">💬 채팅</div>
-      <div class="tab" data-tab="shop">🛒 상점</div>
-    </div>
-
-    <div id="chatTab" class="tab-content active">
-      <div id="messages"></div>
-
-      <form id="messageForm" style="display:none;">
-        <input type="text" id="messageInput" placeholder="명령어나 메시지 입력..." />
-        <button type="submit">전송</button>
-      </form>
-    </div>
-
-    <div id="shopTab" class="tab-content">
-      <div class="shop-container">
-        <div class="shop-title">🛒 낚시 용품 상점</div>
-        <div class="shop-item">
-          <div class="shop-item-info">
-            <div class="shop-item-name">낡은 낚싯대</div>
-            <div class="shop-item-desc">기본적인 낚시를 할 수 있는 낡은 낚싯대입니다.</div>
-            <div class="shop-item-price">💰 100 골드</div>
-          </div>
-          <button id="buyFishingRod">구매하기</button>
-        </div>
+    
+    <!-- 회원가입 폼 -->
+    <div id="registerForm" class="auth-form" style="display: none;">
+      <h2>회원가입</h2>
+      <input type="text" id="registerUsername" placeholder="사용자 이름" required>
+      <input type="password" id="registerPassword" placeholder="비밀번호" required>
+      <input type="password" id="confirmPassword" placeholder="비밀번호 확인" required>
+      <button id="registerBtn">회원가입</button>
+      <div id="registerMessage" class="auth-message"></div>
+      <div class="auth-toggle">
+        이미 계정이 있으신가요? <a id="showLoginBtn">로그인</a>
       </div>
     </div>
   </div>
 
-  <div class="user-list-container">
-    <div class="user-list-title">👥 참여자 목록 (<span id="userCount">0</span>명)</div>
-    <ul id="userList" class="user-list">
-      <!-- 참여자 목록이 여기에 동적으로 추가됩니다 -->
-    </ul>
+  <!-- 채팅 컨테이너 -->
+  <div id="chatContainer" style="width: 100%; display: flex;">
+    <div class="chat-container">
+      <h1>🎣 낚시 채팅방</h1>
+      
+      <div id="userInfo" class="user-info">
+        <span id="userInfoText" class="user-info-text">게스트로 로그인됨</span>
+        <button id="logoutBtn">로그아웃</button>
+      </div>
+      
+      <div id="status">서버 연결 상태: <span style="color:red;">연결 중...</span></div>
+      
+      <div id="controls">
+        <label>방 이름: <input id="roomInput" value="기본방" /></label>
+        <button id="joinButton">입장</button>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="chat">💬 채팅</div>
+        <div class="tab" data-tab="shop">🛒 상점</div>
+      </div>
+
+      <div id="chatTab" class="tab-content active">
+        <div id="messages"></div>
+
+        <form id="messageForm" style="display:none;">
+          <input type="text" id="messageInput" placeholder="명령어나 메시지 입력..." />
+          <button type="submit">전송</button>
+        </form>
+      </div>
+
+      <div id="shopTab" class="tab-content">
+        <div class="shop-container">
+          <div class="shop-title">🛒 낚시 용품 상점</div>
+          <div class="shop-item">
+            <div class="shop-item-info">
+              <div class="shop-item-name">낡은 낚싯대</div>
+              <div class="shop-item-desc">기본적인 낚시를 할 수 있는 낡은 낚싯대입니다.</div>
+              <div class="shop-item-price">💰 100 골드</div>
+            </div>
+            <button id="buyFishingRod">구매하기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="user-list-container">
+      <div class="user-list-title">👥 참여자 목록 (<span id="userCount">0</span>명)</div>
+      <ul id="userList" class="user-list">
+        <!-- 참여자 목록이 여기에 동적으로 추가됩니다 -->
+      </ul>
+    </div>
   </div>
 
   <script>
+    // DOM 요소 참조
+    const authContainer = document.getElementById('authContainer');
+    const chatContainer = document.getElementById('chatContainer');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const loginUsername = document.getElementById('loginUsername');
+    const loginPassword = document.getElementById('loginPassword');
+    const registerUsername = document.getElementById('registerUsername');
+    const registerPassword = document.getElementById('registerPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+    const showRegisterBtn = document.getElementById('showRegisterBtn');
+    const showLoginBtn = document.getElementById('showLoginBtn');
+    const guestLoginBtn = document.getElementById('guestLoginBtn');
+    const loginMessage = document.getElementById('loginMessage');
+    const registerMessage = document.getElementById('registerMessage');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userInfoText = document.getElementById('userInfoText');
+    
     const statusText = document.getElementById('status');
     const messages = document.getElementById('messages');
     const form = document.getElementById('messageForm');
@@ -235,6 +369,204 @@
     let socket;
     let currentUsers = new Set();
     let isConnected = false;
+    let currentUser = {
+      uuid: null,
+      username: null,
+      isGuest: true
+    };
+
+    // 로컬스토리지에서 사용자 정보 불러오기
+    function loadUserFromStorage() {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        
+        // 사용자 정보 표시
+        if (currentUser.isGuest) {
+          userInfoText.textContent = "게스트로 로그인됨";
+        } else {
+          userInfoText.textContent = `${currentUser.username}으로 로그인됨 (UUID: ${currentUser.uuid.substring(0, 8)}...)`;
+        }
+        
+        // 채팅 화면 보이기
+        authContainer.style.display = 'none';
+        chatContainer.style.display = 'flex';
+      }
+    }
+
+    // 초기화 시 로컬스토리지 확인
+    loadUserFromStorage();
+
+    // 폼 전환 이벤트 리스너
+    showRegisterBtn.addEventListener('click', () => {
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'block';
+      loginMessage.textContent = '';
+      loginMessage.className = 'auth-message';
+    });
+
+    showLoginBtn.addEventListener('click', () => {
+      registerForm.style.display = 'none';
+      loginForm.style.display = 'block';
+      registerMessage.textContent = '';
+      registerMessage.className = 'auth-message';
+    });
+
+    // 게스트 로그인
+    guestLoginBtn.addEventListener('click', () => {
+      currentUser = {
+        uuid: null,
+        username: null,
+        isGuest: true
+      };
+      
+      // 로컬스토리지에 저장
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      
+      // 화면 전환
+      authContainer.style.display = 'none';
+      chatContainer.style.display = 'flex';
+      userInfoText.textContent = "게스트로 로그인됨";
+    });
+
+    // 로그아웃 기능
+    logoutBtn.addEventListener('click', () => {
+      // 소켓 연결 종료
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        socket.close();
+      }
+      
+      // 사용자 정보 초기화
+      currentUser = {
+        uuid: null,
+        username: null,
+        isGuest: true
+      };
+      
+      // 로컬스토리지에서 제거
+      localStorage.removeItem('currentUser');
+      
+      // 화면 초기화
+      messages.innerHTML = '';
+      currentUsers.clear();
+      updateUserList();
+      form.style.display = 'none';
+      
+      // 로그인 화면으로 전환
+      chatContainer.style.display = 'none';
+      authContainer.style.display = 'block';
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'none';
+    });
+
+    // 회원가입 기능
+    registerBtn.addEventListener('click', async () => {
+      const username = registerUsername.value.trim();
+      const password = registerPassword.value;
+      const confirmPwd = confirmPassword.value;
+      
+      // 입력 검증
+      if (!username || !password) {
+        registerMessage.textContent = '사용자 이름과 비밀번호를 모두 입력해주세요.';
+        registerMessage.className = 'auth-message error';
+        return;
+      }
+      
+      if (password !== confirmPwd) {
+        registerMessage.textContent = '비밀번호가 일치하지 않습니다.';
+        registerMessage.className = 'auth-message error';
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          registerMessage.textContent = data.message;
+          registerMessage.className = 'auth-message success';
+          
+          // 3초 후 로그인 폼으로 전환
+          setTimeout(() => {
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+            loginUsername.value = username;
+            registerMessage.textContent = '';
+            registerMessage.className = 'auth-message';
+          }, 3000);
+        } else {
+          registerMessage.textContent = data.message;
+          registerMessage.className = 'auth-message error';
+        }
+      } catch (error) {
+        registerMessage.textContent = '서버 오류가 발생했습니다. 다시 시도해주세요.';
+        registerMessage.className = 'auth-message error';
+      }
+    });
+
+    // 로그인 기능
+    loginBtn.addEventListener('click', async () => {
+      const username = loginUsername.value.trim();
+      const password = loginPassword.value;
+      
+      // 입력 검증
+      if (!username || !password) {
+        loginMessage.textContent = '사용자 이름과 비밀번호를 모두 입력해주세요.';
+        loginMessage.className = 'auth-message error';
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          loginMessage.textContent = data.message;
+          loginMessage.className = 'auth-message success';
+          
+          // 사용자 정보 저장
+          currentUser = {
+            uuid: data.uuid,
+            username: data.username,
+            isGuest: false
+          };
+          
+          // 로컬스토리지에 저장
+          localStorage.setItem('currentUser', JSON.stringify(currentUser));
+          
+          // 사용자 정보 표시
+          userInfoText.textContent = `${currentUser.username}으로 로그인됨 (UUID: ${currentUser.uuid.substring(0, 8)}...)`;
+          
+          // 화면 전환
+          setTimeout(() => {
+            authContainer.style.display = 'none';
+            chatContainer.style.display = 'flex';
+            loginMessage.textContent = '';
+            loginMessage.className = 'auth-message';
+          }, 1500);
+        } else {
+          loginMessage.textContent = data.message;
+          loginMessage.className = 'auth-message error';
+        }
+      } catch (error) {
+        loginMessage.textContent = '서버 오류가 발생했습니다. 다시 시도해주세요.';
+        loginMessage.className = 'auth-message error';
+      }
+    });
 
     // 탭 전환 기능
     tabs.forEach(tab => {
@@ -324,13 +656,18 @@
       socket = new WebSocket(`${protocol}//${host}`);
       
       socket.addEventListener('open', function(event) {
-        socket.send(JSON.stringify({ type: 'join', nickname, room }));
+        // UUID가 있으면 함께 전송
+        socket.send(JSON.stringify({ 
+          type: 'join', 
+          nickname, 
+          room,
+          uuid: currentUser.uuid 
+        }));
+        
         statusText.innerHTML = '서버 연결 상태: <span style="color:green;">연결됨</span>';
         form.style.display = 'flex';
         input.focus();
         isConnected = true;
-        
-        // 서버에서 full_user_list를 받아서 처리하므로, 여기서는 추가하지 않음
       });
 
       socket.onmessage = (event) => {
@@ -342,13 +679,11 @@
         }
         if (data.type === 'join') {
           addMessage(data, 'join');
-          // 서버에서 full_user_list를 별도로 보내주므로, 여기서는 추가하지 않음
         } else if (data.type === 'leave') {
           addMessage(data, 'leave');
-          // 서버에서 full_user_list를 별도로 보내주므로, 여기서는 제거하지 않음
         } else if (data.type === 'userInfo') {
           // 사용자 정보를 alert로 표시 (IP, 인벤토리, 골드)
-          alert(`IP 주소: ${data.userId}\n인벤토리: ${JSON.stringify(data.inventory)}\n골드: ${data.gold}`);
+          alert(`ID: ${data.userId}\n인벤토리: ${JSON.stringify(data.inventory)}\n골드: ${data.gold}`);
         } else if (data.type === 'user_list') {
           // 기존 사용자 목록을 처리
           data.users.forEach(user => {
