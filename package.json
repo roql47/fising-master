@@ -1,0 +1,14 @@
+{
+  "name": "realtime-userlist",
+  "version": "1.0.0",
+  "description": "실시간 접속자 수 및 참여자 닉네임 목록 표시 예제",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.1"
+  }
+}

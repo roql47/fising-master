@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>상점 테스트</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      background: #f1f1f1;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      margin-right: 5px;
+    }
+    .tab.active {
+      background: #fff;
+      border-bottom: 1px solid #fff;
+      margin-bottom: -1px;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>상점 UI 테스트</h1>
+  
+  <div class="tabs">
+    <div class="tab active" data-tab="chat">💬 채팅</div>
+    <div class="tab" data-tab="shop">🛒 상점</div>
+  </div>
+  
+  <div id="chatTab" class="tab-content active">
+    <h2>채팅 내용</h2>
+    <p>이곳은 채팅 탭입니다.</p>
+  </div>
+  
+  <div id="shopTab" class="tab-content">
+    <h2>상점 내용</h2>
+    <p>이곳은 상점 탭입니다. 낡은 낚싯대를 구매할 수 있습니다.</p>
+  </div>
+  
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // 활성 탭 변경
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // 활성 콘텐츠 변경
+        const tabId = tab.getAttribute('data-tab');
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabId + 'Tab').classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html> 

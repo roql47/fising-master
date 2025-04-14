@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎣 낚시 채팅방</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+    .chat-container {
+      flex: 1;
+    }
+    .user-list-container {
+      width: 200px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      height: fit-content;
+    }
+    .user-list-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #4a90e2;
+      text-align: center;
+    }
+    .user-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .user-item {
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .user-item:last-child {
+      border-bottom: none;
+    }
+    h1 {
+      color: #4a90e2;
+      text-align: center;
+    }
+    #status {
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    #messages {
+      height: 300px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      white-space: pre-line;
+    }
+    #messageForm {
+      display: flex;
+      gap: 5px;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 20px;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #357ab7;
+    }
+    #controls {
+      margin-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #controls label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #controls input {
+      flex: 1;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .userNickname {
+      color: #4a90e2;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    /* 상점 스타일 */
+    .shop-container {
+      margin-top: 20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+    }
+    .shop-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #4a90e2;
+      text-align: center;
+    }
+    .shop-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .shop-item:last-child {
+      border-bottom: none;
+    }
+    .shop-item-info {
+      flex: 1;
+    }
+    .shop-item-name {
+      font-weight: bold;
+    }
+    .shop-item-price {
+      color: #4a90e2;
+    }
+    .shop-item-desc {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      background: #f1f1f1;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      margin-right: 5px;
+    }
+    .tab.active {
+      background: #fff;
+      border-bottom: 1px solid #fff;
+      margin-bottom: -1px;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <h1>🎣 낚시 채팅방</h1>
+    <div id="status">서버 연결 상태: <span style="color:red;">연결 중...</span></div>
+    
+    <div id="controls">
+      <label>닉네임: <input id="nicknameInput" placeholder="닉네임" /></label>
+      <label>방 이름: <input id="roomInput" value="기본방" /></label>
+      <button id="joinButton">입장</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="chat">💬 채팅</div>
+      <div class="tab" data-tab="shop">🛒 상점</div>
+    </div>
+
+    <div id="chatTab" class="tab-content active">
+      <div id="messages"></div>
+
+      <form id="messageForm" style="display:none;">
+        <input type="text" id="messageInput" placeholder="명령어나 메시지 입력..." />
+        <button type="submit">전송</button>
+      </form>
+    </div>
+
+    <div id="shopTab" class="tab-content">
+      <div class="shop-container">
+        <div class="shop-title">🛒 낚시 용품 상점</div>
+        <div class="shop-item">
+          <div class="shop-item-info">
+            <div class="shop-item-name">낡은 낚싯대</div>
+            <div class="shop-item-desc">기본적인 낚시를 할 수 있는 낡은 낚싯대입니다.</div>
+            <div class="shop-item-price">💰 100 골드</div>
+          </div>
+          <button id="buyFishingRod">구매하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="user-list-container">
+    <div class="user-list-title">👥 참여자 목록</div>
+    <ul id="userList" class="user-list">
+      <!-- 참여자 목록이 여기에 동적으로 추가됩니다 -->
+    </ul>
+  </div>
+
+  <script>
+    const statusText = document.getElementById('status');
+    const messages = document.getElementById('messages');
+    const form = document.getElementById('messageForm');
+    const input = document.getElementById('messageInput');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const roomInput = document.getElementById('roomInput');
+    const joinBtn = document.getElementById('joinButton');
+    const userList = document.getElementById('userList');
+    const buyFishingRodBtn = document.getElementById('buyFishingRod');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    let socket;
+    let currentUsers = new Set();
+    let isConnected = false;
+
+    // 탭 전환 기능
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // 활성 탭 변경
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // 활성 콘텐츠 변경
+        const tabId = tab.getAttribute('data-tab');
+        tabContents.forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabId + 'Tab').classList.add('active');
+      });
+    });
+
+    // 낡은 낚싯대 구매 기능
+    buyFishingRodBtn.addEventListener('click', () => {
+      if (!isConnected) {
+        alert('서버에 연결되어 있지 않습니다. 먼저 채팅방에 입장하세요.');
+        return;
+      }
+      
+      socket.send(JSON.stringify({ 
+        type: 'buy', 
+        item: '낡은 낚싯대',
+        price: 100 
+      }));
+    });
+
+    function updateUserList() {
+      userList.innerHTML = '';
+      if(currentUsers.size === 0) {
+        const li = document.createElement('li');
+        li.className = 'user-item';
+        li.textContent = '아직 참여자가 없습니다';
+        userList.appendChild(li);
+        return;
+      }
+      
+      currentUsers.forEach(user => {
+        const li = document.createElement('li');
+        li.className = 'user-item';
+        li.textContent = user;
+        userList.appendChild(li);
+      });
+    }
+
+    // 초기 목록 업데이트
+    updateUserList();
+
+    function addMessage(msg, type = 'chat') {
+      if (type === 'join' && msg.userId && msg.nickname) {
+        // join 메시지: 닉네임을 클릭 가능하도록 표시
+        const div = document.createElement('div');
+        const timeMatch = msg.text.match(/^\[.*?\]/);
+        const timeStr = timeMatch ? timeMatch[0] : '';
+        const prefix = " 💬 ";
+        const suffix = "님이 입장했습니다.";
+        div.innerHTML = `${timeStr}${prefix}<span class="userNickname" data-userid="${msg.userId}">${msg.nickname}</span>${suffix}`;
+        div.querySelector('.userNickname').onclick = function () {
+          const targetUserId = this.getAttribute('data-userid');
+          socket.send(JSON.stringify({ type: 'requestUserInfo', targetUserId }));
+        };
+        messages.appendChild(div);
+        
+        // 사용자 목록에 추가
+        currentUsers.add(msg.nickname);
+        updateUserList();
+      } else if (type === 'leave' && msg.nickname) {
+        // 퇴장 메시지 표시
+        const div = document.createElement('div');
+        div.textContent = msg.text;
+        messages.appendChild(div);
+        
+        // 사용자 목록에서 제거
+        currentUsers.delete(msg.nickname);
+        updateUserList();
+      } else {
+        const div = document.createElement('div');
+        div.textContent = typeof msg === 'string' ? msg : msg.text;
+        messages.appendChild(div);
+      }
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    joinBtn.onclick = () => {
+      const nickname = nicknameInput.value.trim();
+      const room = roomInput.value.trim() || '기본방';
+      if (!nickname) return alert('닉네임을 입력하세요.');
+
+      // 기존 연결이 있으면 닫기
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        socket.close();
+      }
+
+      socket = new WebSocket('ws://localhost:8080');
+
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ type: 'join', nickname, room }));
+        statusText.innerHTML = '서버 연결 상태: <span style="color:green;">연결됨</span>';
+        form.style.display = 'flex';
+        input.focus();
+        isConnected = true;
+      };
+
+      socket.onmessage = (event) => {
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch (e) {
+          data = { type: 'chat', text: event.data };
+        }
+        if (data.type === 'join') {
+          addMessage(data, 'join');
+        } else if (data.type === 'leave') {
+          addMessage(data, 'leave');
+        } else if (data.type === 'userInfo') {
+          // 사용자 정보를 alert로 표시 (IP, 인벤토리, 골드)
+          alert(`IP 주소: ${data.userId}\n인벤토리: ${JSON.stringify(data.inventory)}\n골드: ${data.gold}`);
+        } else {
+          addMessage(data);
+        }
+      };
+
+      socket.onclose = () => {
+        statusText.innerHTML = '서버 연결 상태: <span style="color:red;">연결 종료</span>';
+        addMessage('❌ 서버 연결 종료됨');
+        form.style.display = 'none';
+        currentUsers.clear();
+        updateUserList();
+        isConnected = false;
+      };
+
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        if (!input.value.trim()) return;
+        socket.send(JSON.stringify({ type: 'message', text: input.value.trim() }));
+        input.value = '';
+      };
+    };
+  </script>
+</body>
+</html>
