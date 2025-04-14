@@ -156,6 +156,18 @@ wss.on('connection', (ws, request) => {
         saveDatabase();
       }
 
+      // 기존 사용자 목록을 새 사용자에게 전송
+      const existingUsers = [];
+      for (const [, info] of clients) {
+        if (info.room === room && info.userId !== userId) {
+          existingUsers.push({ userId: info.userId, nickname: info.nickname });
+        }
+      }
+      ws.send(JSON.stringify({ 
+        type: 'user_list', 
+        users: existingUsers 
+      }));
+
       // join 메시지에 userId 포함하여 브로드캐스트
       const joinMsg = {
         type: 'join',
