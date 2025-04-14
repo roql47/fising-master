@@ -8,6 +8,11 @@ const app = express();
 // 정적 파일 제공 설정
 app.use(express.static(path.join(__dirname)));
 
+// 루트 경로 처리
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'client.html'));
+});
+
 // Map: WebSocket → { userId, nickname, room }
 const clients = new Map();
 // Map: userId → { 물고기명: 개수 }
