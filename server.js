@@ -156,16 +156,18 @@ wss.on('connection', (ws, request) => {
         saveDatabase();
       }
 
-      // 기존 사용자 목록을 새 사용자에게 전송
-      const existingUsers = [];
+      // 모든 참여자 목록 생성
+      const allUsers = [];
       for (const [, info] of clients) {
-        if (info.room === room && info.userId !== userId) {
-          existingUsers.push({ userId: info.userId, nickname: info.nickname });
+        if (info.room === room) {
+          allUsers.push({ userId: info.userId, nickname: info.nickname });
         }
       }
+      
+      // 새 사용자에게 전체 사용자 목록 전송
       ws.send(JSON.stringify({ 
-        type: 'user_list', 
-        users: existingUsers 
+        type: 'full_user_list', 
+        users: allUsers 
       }));
 
       // join 메시지에 userId 포함하여 브로드캐스트
@@ -178,12 +180,6 @@ wss.on('connection', (ws, request) => {
       broadcast(room, joinMsg);
       
       // 모든 참여자에게 최신 참여자 목록 전송하기
-      const allUsers = [];
-      for (const [, info] of clients) {
-        if (info.room === room) {
-          allUsers.push({ userId: info.userId, nickname: info.nickname });
-        }
-      }
       broadcast(room, { 
         type: 'full_user_list', 
         users: allUsers 
