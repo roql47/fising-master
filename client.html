@@ -321,25 +321,20 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
-    joinBtn.onclick = () => {
-      const nickname = nicknameInput.value.trim();
-      const room = roomInput.value.trim() || '기본방';
-      if (!nickname) return alert('닉네임을 입력하세요.');
-
-      // 기존 연결이 있으면 닫기
-      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-        socket.close();
-      }
-
-      socket = new WebSocket('ws://localhost:8080');
-
-      socket.onopen = () => {
+    // 연결 함수
+    function connect() {
+      // 현재 호스트 기반으로 WebSocket URL 생성
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      socket = new WebSocket(`${protocol}//${host}`);
+      
+      socket.addEventListener('open', function(event) {
         socket.send(JSON.stringify({ type: 'join', nickname, room }));
         statusText.innerHTML = '서버 연결 상태: <span style="color:green;">연결됨</span>';
         form.style.display = 'flex';
         input.focus();
         isConnected = true;
-      };
+      });
 
       socket.onmessage = (event) => {
         let data;
@@ -375,6 +370,19 @@
         socket.send(JSON.stringify({ type: 'message', text: input.value.trim() }));
         input.value = '';
       };
+    }
+
+    joinBtn.onclick = () => {
+      const nickname = nicknameInput.value.trim();
+      const room = roomInput.value.trim() || '기본방';
+      if (!nickname) return alert('닉네임을 입력하세요.');
+
+      // 기존 연결이 있으면 닫기
+      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+        socket.close();
+      }
+
+      connect();
     };
   </script>
 </body>
