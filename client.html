@@ -357,7 +357,6 @@
     const messages = document.getElementById('messages');
     const form = document.getElementById('messageForm');
     const input = document.getElementById('messageInput');
-    const nicknameInput = document.getElementById('nicknameInput');
     const roomInput = document.getElementById('roomInput');
     const joinBtn = document.getElementById('joinButton');
     const userList = document.getElementById('userList');
@@ -720,9 +719,15 @@
     }
 
     joinBtn.onclick = () => {
-      const nickname = nicknameInput.value.trim();
       const room = roomInput.value.trim() || '기본방';
-      if (!nickname) return alert('닉네임을 입력하세요.');
+      
+      // 닉네임 설정 (로그인된 사용자는 사용자 이름, 게스트는 임의 이름)
+      let nickname;
+      if (!currentUser.isGuest && currentUser.username) {
+        nickname = currentUser.username;
+      } else {
+        nickname = 'Guest_' + Math.floor(Math.random() * 10000);
+      }
 
       // 기존 연결이 있으면 닫기
       if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
