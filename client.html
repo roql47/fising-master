@@ -212,7 +212,7 @@
   </div>
 
   <div class="user-list-container">
-    <div class="user-list-title">👥 참여자 목록</div>
+    <div class="user-list-title">👥 참여자 목록 (<span id="userCount">0</span>명)</div>
     <ul id="userList" class="user-list">
       <!-- 참여자 목록이 여기에 동적으로 추가됩니다 -->
     </ul>
@@ -227,6 +227,7 @@
     const roomInput = document.getElementById('roomInput');
     const joinBtn = document.getElementById('joinButton');
     const userList = document.getElementById('userList');
+    const userCount = document.getElementById('userCount');
     const buyFishingRodBtn = document.getElementById('buyFishingRod');
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -267,6 +268,8 @@
 
     function updateUserList() {
       userList.innerHTML = '';
+      userCount.textContent = currentUsers.size;
+      
       if(currentUsers.size === 0) {
         const li = document.createElement('li');
         li.className = 'user-item';
@@ -334,6 +337,10 @@
         form.style.display = 'flex';
         input.focus();
         isConnected = true;
+        
+        // 자신의 닉네임을 참여자 목록에 추가
+        currentUsers.add(nickname);
+        updateUserList();
       });
 
       socket.onmessage = (event) => {
@@ -350,6 +357,12 @@
         } else if (data.type === 'userInfo') {
           // 사용자 정보를 alert로 표시 (IP, 인벤토리, 골드)
           alert(`IP 주소: ${data.userId}\n인벤토리: ${JSON.stringify(data.inventory)}\n골드: ${data.gold}`);
+        } else if (data.type === 'user_list') {
+          // 기존 사용자 목록을 처리
+          data.users.forEach(user => {
+            currentUsers.add(user.nickname);
+          });
+          updateUserList();
         } else {
           addMessage(data);
         }
