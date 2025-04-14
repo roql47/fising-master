@@ -363,6 +363,13 @@
             currentUsers.add(user.nickname);
           });
           updateUserList();
+        } else if (data.type === 'full_user_list') {
+          // 전체 사용자 목록으로 업데이트
+          currentUsers.clear();
+          data.users.forEach(user => {
+            currentUsers.add(user.nickname);
+          });
+          updateUserList();
         } else {
           addMessage(data);
         }
