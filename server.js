@@ -3,10 +3,12 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const crypto = require('crypto');
 
 const app = express();
 // 정적 파일 제공 설정
 app.use(express.static(path.join(__dirname)));
+app.use(express.json());
 
 // 루트 경로에 대한 GET 요청 처리
 app.get('/', (req, res) => {
@@ -19,6 +21,8 @@ const clients = new Map();
 const inventories = new Map();
 // Map: userId → 골드 (숫자)
 const userGold = new Map();
+// Map: username → { password, uuid }
+const users = new Map();
 
 const fishTable = [
   { name: '고등어', chance: 0.4, price: 10 },
@@ -28,6 +32,92 @@ const fishTable = [
 ];
 
 const DB_FILE = path.join(__dirname, 'db.json');
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+// UUID 생성 함수
+function generateUUID() {
+  return crypto.randomUUID();
+}
+
+// 유저 데이터베이스 파일에서 기존 유저 데이터를 불러오기
+function loadUsers() {
+  if (fs.existsSync(USERS_FILE)) {
+    try {
+      let data = fs.readFileSync(USERS_FILE, 'utf8');
+      let usersData = JSON.parse(data);
+      
+      for (const username in usersData) {
+        users.set(username, usersData[username]);
+      }
+      
+      console.log('유저 데이터베이스 로드 완료');
+    } catch (e) {
+      console.error("유저 데이터베이스 로드 에러:", e);
+    }
+  }
+}
+
+// 유저 데이터 저장
+function saveUsers() {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(Object.fromEntries(users), null, 2), 'utf8');
+  } catch (e) {
+    console.error("유저 데이터베이스 저장 에러:", e);
+  }
+}
+
+// 회원가입 API
+app.post('/api/register', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: '사용자 이름과 비밀번호를 모두 입력해야 합니다.' });
+  }
+  
+  if (users.has(username)) {
+    return res.status(409).json({ success: false, message: '이미 존재하는 사용자 이름입니다.' });
+  }
+  
+  const uuid = generateUUID();
+  users.set(username, { password, uuid });
+  saveUsers();
+  
+  // 새 사용자를 위한 인벤토리 및 골드 초기화
+  if (!inventories.has(uuid)) {
+    inventories.set(uuid, {});
+  }
+  if (!userGold.has(uuid)) {
+    userGold.set(uuid, 0);
+  }
+  saveDatabase();
+  
+  return res.status(201).json({ success: true, message: '회원가입이 완료되었습니다.', uuid });
+});
+
+// 로그인 API
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: '사용자 이름과 비밀번호를 모두 입력해야 합니다.' });
+  }
+  
+  if (!users.has(username)) {
+    return res.status(404).json({ success: false, message: '존재하지 않는 사용자입니다.' });
+  }
+  
+  const user = users.get(username);
+  if (user.password !== password) {
+    return res.status(401).json({ success: false, message: '비밀번호가 일치하지 않습니다.' });
+  }
+  
+  return res.status(200).json({ 
+    success: true, 
+    message: '로그인이 완료되었습니다.', 
+    uuid: user.uuid,
+    username: username
+  });
+});
 
 // 데이터베이스 파일(db.json)에서 기존 데이터를 불러오기
 function loadDatabase() {
@@ -98,13 +188,14 @@ function saveLog(room, content) {
 
 // 서버 시작 전에 기존 데이터 로드
 loadDatabase();
+loadUsers();
 
 // HTTP 서버 생성
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', (ws, request) => {
-  // 연결 시 클라이언트의 IP 주소를 userId로 사용 (예: "::1", "xxx.xxx.xxx.xxx")
+  // 연결 시 클라이언트의 IP 주소를 임시 userId로 사용 (실제 로그인 후 UUID로 대체됨)
   const ip = request.socket.remoteAddress;
   // 클라이언트에게 join 요청 메시지 전송
   ws.send(JSON.stringify({ type: 'request_nickname' }));
@@ -134,9 +225,10 @@ wss.on('connection', (ws, request) => {
     if (parsed.type === 'join') {
       const nickname = parsed.nickname;
       const room = parsed.room;
-      const userId = ip; // 사용자의 고유 ID는 IP 주소로 설정
-
-      // 동일 IP와 동일 닉네임으로 이미 접속 중인 기존 연결이 있으면 종료
+      const uuid = parsed.uuid; // 로그인 후 받은 UUID
+      const userId = uuid || ip; // UUID가 없으면 IP 사용 (비로그인 사용자)
+      
+      // 동일 ID와 동일 닉네임으로 이미 접속 중인 기존 연결이 있으면 종료
       for (const [client, info] of clients.entries()) {
         if (info.userId === userId && info.nickname === nickname && client !== ws) {
           client.send(JSON.stringify({ text: `⚠️ 다른 위치에서 ${nickname}으로 접속되어 연결이 종료됩니다.` }));
