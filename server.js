@@ -176,6 +176,19 @@ wss.on('connection', (ws, request) => {
         nickname
       };
       broadcast(room, joinMsg);
+      
+      // 모든 참여자에게 최신 참여자 목록 전송하기
+      const allUsers = [];
+      for (const [, info] of clients) {
+        if (info.room === room) {
+          allUsers.push({ userId: info.userId, nickname: info.nickname });
+        }
+      }
+      broadcast(room, { 
+        type: 'full_user_list', 
+        users: allUsers 
+      });
+      
       return;
     }
 
@@ -348,6 +361,18 @@ wss.on('connection', (ws, request) => {
         nickname: nickname
       };
       broadcast(room, exitMsg);
+      
+      // 모든 참여자에게 최신 참여자 목록 전송하기
+      const allUsers = [];
+      for (const [, info] of clients) {
+        if (info.room === room) {
+          allUsers.push({ userId: info.userId, nickname: info.nickname });
+        }
+      }
+      broadcast(room, { 
+        type: 'full_user_list', 
+        users: allUsers 
+      });
     }
   });
 });
