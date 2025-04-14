@@ -8,11 +8,6 @@ const app = express();
 // 정적 파일 제공 설정
 app.use(express.static(path.join(__dirname)));
 
-// 루트 경로 처리
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client.html'));
-});
-
 // Map: WebSocket → { userId, nickname, room }
 const clients = new Map();
 // Map: userId → { 물고기명: 개수 }
@@ -136,10 +131,10 @@ wss.on('connection', (ws, request) => {
       const room = parsed.room;
       const userId = ip; // 사용자의 고유 ID는 IP 주소로 설정
 
-      // 동일 IP로 이미 접속 중인 기존 연결 있으면 종료
+      // 동일 IP와 동일 닉네임으로 이미 접속 중인 기존 연결이 있으면 종료
       for (const [client, info] of clients.entries()) {
-        if (info.userId === userId && client !== ws) {
-          client.send(JSON.stringify({ text: `⚠️ 다른 위치에서 접속되어 연결이 종료됩니다.` }));
+        if (info.userId === userId && info.nickname === nickname && client !== ws) {
+          client.send(JSON.stringify({ text: `⚠️ 다른 위치에서 ${nickname}으로 접속되어 연결이 종료됩니다.` }));
           clients.delete(client);
           client.terminate();
         }
