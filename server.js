@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 // MongoDB 연결 설정
-mongoose.connect('mongodb+srv://roql47:wiztech1@cluster0.i5hmbzr.mongodb.net/fishing_game?retryWrites=true&w=majority', {
+mongoose.connect('mongodb+srv://roql47:'+encodeURIComponent('wiztech1')+'@cluster0.i5hmbzr.mongodb.net/fishing_game?retryWrites=true&w=majority', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
