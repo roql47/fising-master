@@ -7,11 +7,12 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 // MongoDB 연결 설정
-mongoose.connect('mongodb+srv://roql47:'+encodeURIComponent('wiztech1')+'@cluster0.i5hmbzr.mongodb.net/fishing_game?retryWrites=true&w=majority', {
+mongoose.connect('mongodb+srv://roql47:'+encodeURIComponent('wiztech1')+'@cluster0.i5hmbzr.mongodb.net/?retryWrites=true&w=majority', {
+  dbName: 'fishing_game',  // 명시적으로 데이터베이스 이름 지정
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
-  console.log('MongoDB Atlas 연결 성공');
+  console.log('MongoDB Atlas 연결 성공 - fishing_game 데이터베이스');
 }).catch((err) => {
   console.error('MongoDB Atlas 연결 실패:', err);
 });
@@ -33,9 +34,17 @@ const goldSchema = new mongoose.Schema({
   amount: { type: Number, default: 0 }
 });
 
+// 채팅 로그를 위한 스키마 추가
+const chatLogSchema = new mongoose.Schema({
+  room: { type: String, required: true },
+  content: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', userSchema);
 const Inventory = mongoose.model('Inventory', inventorySchema);
 const Gold = mongoose.model('Gold', goldSchema);
+const ChatLog = mongoose.model('ChatLog', chatLogSchema);
 
 const app = express();
 // 정적 파일 제공 설정
@@ -238,12 +247,45 @@ function broadcast(room, messageObj) {
   }
 }
 
-function saveLog(room, content) {
+// 채팅 로그 저장 함수 수정
+async function saveLog(room, content) {
+  // 로컬 파일 시스템에 저장
   const logDir = path.join(__dirname, 'chatlogs');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir);
   const filePath = path.join(logDir, `${room}.txt`);
   fs.appendFileSync(filePath, content + '\n');
+  
+  // MongoDB에도 저장
+  try {
+    const chatLog = new ChatLog({ room, content });
+    await chatLog.save();
+  } catch (e) {
+    console.error("채팅 로그 저장 에러:", e);
+  }
 }
+
+// 채팅 로그 조회 API
+app.get('/api/chatlogs/:room', async (req, res) => {
+  try {
+    const { room } = req.params;
+    const logs = await ChatLog.find({ room }).sort({ timestamp: -1 }).limit(100);
+    res.json({ success: true, logs });
+  } catch (e) {
+    console.error('채팅 로그 조회 에러:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// 모든 채팅방 목록 조회 API
+app.get('/api/chatrooms', async (req, res) => {
+  try {
+    const rooms = await ChatLog.distinct('room');
+    res.json({ success: true, rooms });
+  } catch (e) {
+    console.error('채팅방 목록 조회 에러:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 // 서버 시작 전에 기존 데이터 로드
 async function initializeServer() {
