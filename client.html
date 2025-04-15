@@ -40,9 +40,13 @@
     .user-item {
       padding: 5px;
       border-bottom: 1px solid #eee;
+      cursor: pointer;
     }
     .user-item:last-child {
       border-bottom: none;
+    }
+    .user-item:hover {
+      background-color: #f5f5f5;
     }
     h1 {
       color: #4a90e2;
@@ -242,6 +246,61 @@
     #chatContainer {
       display: none;
     }
+    /* 모달 스타일 추가 */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 5px;
+      width: 80%;
+      max-width: 500px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .close-modal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .close-modal:hover {
+      color: #555;
+    }
+    .inventory-list {
+      margin-top: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+    .inventory-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .modal-title {
+      color: #4a90e2;
+      margin-top: 0;
+      font-size: 1.2em;
+    }
+    /* Fish 이모티콘 추가 */
+    .fish-emoji {
+      margin-right: 5px;
+    }
+    
+    .gold-amount {
+      color: #f8c537;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -332,6 +391,17 @@
     </div>
   </div>
 
+  <!-- 인벤토리 모달 추가 -->
+  <div id="inventoryModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeInventoryModal()">&times;</span>
+      <h3 class="modal-title" id="modalTitle">사용자 인벤토리</h3>
+      <div id="inventoryContent" class="inventory-list">
+        <!-- 인벤토리 항목들이 여기에 동적으로 추가됨 -->
+      </div>
+    </div>
+  </div>
+
   <script>
     // DOM 요소 참조
     const authContainer = document.getElementById('authContainer');
@@ -360,7 +430,7 @@
     const roomInput = document.getElementById('roomInput');
     const joinBtn = document.getElementById('joinButton');
     const userList = document.getElementById('userList');
-    const userCount = document.getElementById('userCount');
+    const userCountElement = document.getElementById('userCount');
     const buyFishingRodBtn = document.getElementById('buyFishingRod');
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -373,6 +443,11 @@
       username: null,
       isGuest: true
     };
+
+    const inventoryModal = document.getElementById('inventoryModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const inventoryContent = document.getElementById('inventoryContent');
+    let currentUserData = [];
 
     // 로컬스토리지에서 사용자 정보 불러오기
     function loadUserFromStorage() {
@@ -598,23 +673,27 @@
     });
 
     function updateUserList() {
-      userList.innerHTML = '';
-      userCount.textContent = currentUsers.size;
+      const userListElement = document.getElementById('userList');
+      userListElement.innerHTML = '';
       
-      if(currentUsers.size === 0) {
-        const li = document.createElement('li');
-        li.className = 'user-item';
-        li.textContent = '아직 참여자가 없습니다';
-        userList.appendChild(li);
-        return;
-      }
-      
-      currentUsers.forEach(user => {
-        const li = document.createElement('li');
-        li.className = 'user-item';
-        li.textContent = user;
-        userList.appendChild(li);
+      currentUserData.forEach(user => {
+        const listItem = document.createElement('li');
+        listItem.className = 'user-item';
+        listItem.textContent = user.nickname;
+        
+        // 닉네임 클릭 이벤트 추가
+        listItem.addEventListener('click', () => {
+          if (user.userId) {
+            requestUserInventory(user.userId, user.nickname);
+          } else {
+            alert('사용자 정보를 가져올 수 없습니다.');
+          }
+        });
+        
+        userListElement.appendChild(listItem);
       });
+      
+      userCountElement.textContent = currentUserData.length;
     }
 
     // 초기 목록 업데이트
@@ -681,20 +760,19 @@
         } else if (data.type === 'leave') {
           addMessage(data, 'leave');
         } else if (data.type === 'userInfo') {
-          // 사용자 정보를 alert로 표시 (IP, 인벤토리, 골드)
-          alert(`ID: ${data.userId}\n인벤토리: ${JSON.stringify(data.inventory)}\n골드: ${data.gold}`);
+          // 인벤토리 정보 모달로 표시
+          showInventoryModal(
+            currentUserData.find(user => user.userId === data.userId)?.nickname || '알 수 없음',
+            data.inventory || {},
+            data.gold || 0
+          );
         } else if (data.type === 'user_list') {
           // 기존 사용자 목록을 처리
-          data.users.forEach(user => {
-            currentUsers.add(user.nickname);
-          });
+          currentUserData = data.users;
           updateUserList();
         } else if (data.type === 'full_user_list') {
           // 전체 사용자 목록으로 업데이트
-          currentUsers.clear();
-          data.users.forEach(user => {
-            currentUsers.add(user.nickname);
-          });
+          currentUserData = data.users;
           updateUserList();
         } else {
           addMessage(data);
@@ -735,6 +813,95 @@
       }
 
       connect(nickname, room);
+    };
+
+    // 사용자 인벤토리 요청 함수
+    function requestUserInventory(userId, nickname) {
+      if (!isConnected) {
+        alert('서버에 연결되어 있지 않습니다.');
+        return;
+      }
+      
+      socket.send(JSON.stringify({
+        type: 'requestUserInfo',
+        targetUserId: userId
+      }));
+    }
+    
+    // 인벤토리 모달 표시 함수
+    function showInventoryModal(nickname, inventory, gold) {
+      modalTitle.textContent = `${nickname}님의 인벤토리`;
+      
+      // 인벤토리 내용 표시
+      inventoryContent.innerHTML = '';
+      
+      // 골드 표시
+      const goldItem = document.createElement('div');
+      goldItem.className = 'inventory-item';
+      goldItem.innerHTML = `<span>💰 골드</span><span class="gold-amount">${gold} G</span>`;
+      inventoryContent.appendChild(goldItem);
+      
+      // 물고기 및 아이템 표시
+      let hasItems = false;
+      
+      // 낚싯대 표시
+      if (inventory['낚싯대']) {
+        hasItems = true;
+        const rodItem = document.createElement('div');
+        rodItem.className = 'inventory-item';
+        rodItem.innerHTML = `<span>🎣 낚싯대</span><span>${inventory['낚싯대']}개</span>`;
+        inventoryContent.appendChild(rodItem);
+      }
+      
+      // 물고기 표시 (고등어, 멸치, 문어, 쭈꾸미 순서로)
+      const fishTypes = ['고등어', '멸치', '문어', '쭈꾸미'];
+      const fishEmojis = {'고등어': '🐟', '멸치': '🐠', '문어': '🐙', '쭈꾸미': '🦑'};
+      
+      fishTypes.forEach(fishType => {
+        if (inventory[fishType]) {
+          hasItems = true;
+          const fishItem = document.createElement('div');
+          fishItem.className = 'inventory-item';
+          fishItem.innerHTML = `<span>${fishEmojis[fishType] || '🐟'} ${fishType}</span><span>${inventory[fishType]}마리</span>`;
+          inventoryContent.appendChild(fishItem);
+        }
+      });
+      
+      // 기타 아이템들 표시
+      Object.keys(inventory).forEach(itemName => {
+        if (!fishTypes.includes(itemName) && itemName !== '낚싯대' && inventory[itemName]) {
+          hasItems = true;
+          const item = document.createElement('div');
+          item.className = 'inventory-item';
+          item.innerHTML = `<span>📦 ${itemName}</span><span>${inventory[itemName]}개</span>`;
+          inventoryContent.appendChild(item);
+        }
+      });
+      
+      // 아이템이 없는 경우 메시지 표시
+      if (!hasItems) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.textContent = '인벤토리가 비어있습니다.';
+        emptyMessage.style.textAlign = 'center';
+        emptyMessage.style.padding = '10px';
+        emptyMessage.style.color = '#888';
+        inventoryContent.appendChild(emptyMessage);
+      }
+      
+      // 모달 표시
+      inventoryModal.style.display = 'block';
+    }
+    
+    // 인벤토리 모달 닫기 함수
+    function closeInventoryModal() {
+      inventoryModal.style.display = 'none';
+    }
+    
+    // 모달 외부 클릭시 닫기
+    window.onclick = function(event) {
+      if (event.target === inventoryModal) {
+        closeInventoryModal();
+      }
     };
   </script>
 </body>
