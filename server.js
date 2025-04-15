@@ -7,17 +7,35 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 
 // MongoDB 연결 설정
-mongoose.connect('mongodb+srv://roql47:'+encodeURIComponent('wiztech1')+'@cluster0.i5hmbzr.mongodb.net/?retryWrites=true&w=majority', {
-  dbName: 'fishing_game',  // 명시적으로 데이터베이스 이름 지정
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 30000, // 서버 선택 타임아웃 30초로 증가
-  socketTimeoutMS: 45000, // 소켓 타임아웃 45초로 증가
-  connectTimeoutMS: 30000 // 연결 타임아웃 30초로 증가
-}).then(() => {
-  console.log('MongoDB Atlas 연결 성공 - fishing_game 데이터베이스');
-}).catch((err) => {
-  console.error('MongoDB Atlas 연결 실패:', err);
+let mongoConnected = false;
+
+function connectToMongoDB() {
+  mongoose.connect('mongodb+srv://roql47:'+encodeURIComponent('wiztech1')+'@cluster0.i5hmbzr.mongodb.net/?retryWrites=true&w=majority', {
+    dbName: 'fishing_game',  // 명시적으로 데이터베이스 이름 지정
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 15000, // 서버 선택 타임아웃 15초
+    socketTimeoutMS: 45000, // 소켓 타임아웃 45초
+    connectTimeoutMS: 30000 // 연결 타임아웃 30초
+  }).then(() => {
+    console.log('MongoDB Atlas 연결 성공 - fishing_game 데이터베이스');
+    mongoConnected = true;
+  }).catch((err) => {
+    console.error('MongoDB Atlas 연결 실패:', err);
+    mongoConnected = false;
+    // 10초 후에 재연결 시도
+    setTimeout(connectToMongoDB, 10000);
+  });
+}
+
+// 초기 연결 시도
+connectToMongoDB();
+
+// 연결 끊김 감지 및 재연결
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB 연결이 끊어졌습니다. 재연결을 시도합니다...');
+  mongoConnected = false;
+  setTimeout(connectToMongoDB, 5000);
 });
 
 // 스키마 정의
@@ -206,22 +224,38 @@ async function loadDatabase() {
 
 // 현재 메모리 데이터를 MongoDB에 저장하기
 async function saveDatabase() {
+  if (!mongoConnected) {
+    console.log('MongoDB 연결이 준비되지 않아 데이터베이스 저장을 건너뜁니다.');
+    return;
+  }
+
   try {
+    const savePromises = [];
+    
+    // 인벤토리 저장
     for (const [userId, items] of inventories) {
-      await Inventory.findOneAndUpdate(
-        { userId },
-        { userId, items },
-        { upsert: true }
+      savePromises.push(
+        Inventory.findOneAndUpdate(
+          { userId },
+          { userId, items },
+          { upsert: true }
+        ).catch(e => console.error(`인벤토리 저장 에러 (${userId}):`, e))
       );
     }
     
+    // 골드 저장
     for (const [userId, amount] of userGold) {
-      await Gold.findOneAndUpdate(
-        { userId },
-        { userId, amount },
-        { upsert: true }
+      savePromises.push(
+        Gold.findOneAndUpdate(
+          { userId },
+          { userId, amount },
+          { upsert: true }
+        ).catch(e => console.error(`골드 저장 에러 (${userId}):`, e))
       );
     }
+    
+    // 모든 저장 작업 병렬 처리
+    await Promise.allSettled(savePromises);
   } catch (e) {
     console.error("데이터베이스 저장 에러:", e);
   }
@@ -262,21 +296,17 @@ async function saveLog(room, content) {
     console.error("채팅 로그 파일 저장 에러:", e);
   }
   
-  // MongoDB에 저장 시도 (오류 발생해도 전체 흐름 차단하지 않음)
+  // MongoDB에 저장 시도
+  if (!mongoConnected) {
+    console.log('MongoDB 연결이 준비되지 않아 채팅 로그 저장을 건너뜁니다.');
+    return;
+  }
+  
   try {
-    // 몽고DB 연결 상태 확인
-    if (mongoose.connection.readyState !== 1) {
-      console.log("MongoDB 연결이 준비되지 않아 채팅 로그를 저장하지 않습니다.");
-      return;
-    }
-    
     const chatLog = new ChatLog({ room, content });
-    await chatLog.save().catch(err => {
-      console.error("채팅 로그 MongoDB 저장 실패:", err);
-    });
+    await chatLog.save();
   } catch (e) {
     console.error("채팅 로그 MongoDB 저장 에러:", e);
-    // 오류가 발생해도 프로그램 실행 계속
   }
 }
 
@@ -306,8 +336,14 @@ app.get('/api/chatrooms', async (req, res) => {
 // 서버 시작 전에 기존 데이터 로드
 async function initializeServer() {
   try {
-    await loadDatabase();
-    await loadUsers();
+    // MongoDB 데이터 로드 시도 (실패해도 계속 진행)
+    try {
+      await loadDatabase();
+      await loadUsers();
+      console.log('MongoDB 데이터 로드 완료');
+    } catch (e) {
+      console.error('MongoDB 데이터 로드 실패, 서버는 로컬 메모리 데이터로 계속 실행됩니다:', e);
+    }
     
     // HTTP 서버 생성
     const server = http.createServer(app);
